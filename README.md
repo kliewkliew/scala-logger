@@ -10,9 +10,13 @@ import utils.Concise._
 import utils.Singleton.logger
 
 logger !
-        ( logPath,
+        ( "C:\logPath.txt",
           Timestamp(
             Namespace("YouTube", "New Video"),
             now)
           )
+```
+Output: C:\logPath.txt
+```
+Youtube New Video               2016-02-11	16:08:06
 ```
