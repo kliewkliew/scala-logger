@@ -6,7 +6,7 @@ A collection of utilities intended for data-mining/logging apps
 To send messages to the logger
 
 ```
-import utils.Concise._
+import utils.Concise.now
 import utils.Singleton.logger
 
 logger !
