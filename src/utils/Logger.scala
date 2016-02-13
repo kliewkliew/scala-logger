@@ -26,15 +26,15 @@ class Logger () extends Actor {
   private def logDuration (filePath: String, duration: Duration): Unit =
   {
     val diff = java.time.Duration.between(
-      LocalDateTime.ofInstant(duration.end.toInstant(), ZoneId.systemDefault()),
-      LocalDateTime.ofInstant(duration.start.toInstant, ZoneId.systemDefault()))
+      LocalDateTime.ofInstant(duration.start.toInstant(), ZoneId.systemDefault()),
+      LocalDateTime.ofInstant(duration.end.toInstant(), ZoneId.systemDefault()))
 
     logTimestamp(
       filePath,
       Property(
         duration.namespace,
         duration.end,
-        String.format("%s\t" + durationFormat ,
+        String.format(durationFormat ,
           duration.key,
           new Long(diff.toDays()),
           new Long(diff.toHours() % 24),
@@ -104,5 +104,5 @@ object Logger {
   private val timestampFormat = "%s\t%s"
   private val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
   private val timeFormat = new SimpleDateFormat("HH:mm:ss")
-  private val durationFormat = "%-10s:%3d %02d:%02d:%02d"
+  private val durationFormat = "%-10s:%3d-%02d:%02d:%02d"
 }
