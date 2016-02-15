@@ -34,7 +34,7 @@ class Logger () extends Actor {
       Property(
         duration.namespace,
         duration.end,
-        String.format(durationFormat ,
+        durationFormat.format(
           duration.key,
           new Long(diff.toDays()),
           new Long(diff.toHours() % 24),
@@ -50,7 +50,7 @@ class Logger () extends Actor {
     logNamespace(
       filePath,
       property.namespace,
-      String.format(timestampFormat + "\t%s",
+      (timestampFormat + "\t%s").format(
         dateFormat.format(property.timestamp),
         timeFormat.format(property.timestamp),
         property.value))
@@ -70,8 +70,8 @@ class Logger () extends Actor {
   {
     logMessage(
       filePath,
-      String.format("%s\t%s",
-        String.format(namespaceFormat, namespace.app, namespace.key),
+      "%s%s".format(
+        namespaceFormat.format(namespace.app, namespace.key),
         message))
   }
 
