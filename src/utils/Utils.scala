@@ -9,8 +9,10 @@ object Concise {
 }
 
 object Format {
-  def listToString(list: List[String]): String = list.reduce{_ + ", " + _}
-  def listToReverseString(list: List[String]): String = list.reduce{(a: String, b: String) => b + ", " + a}
+  def listToString(list: List[Any]): String =
+    list.reduce{_.toString + ", " + _.toString}.toString
+  def listToReverseString(list: List[Any]): String =
+    list.reduce{(a: Any, b: Any) => b.toString + ", " + a.toString}.toString
 }
 
 object Singleton {
