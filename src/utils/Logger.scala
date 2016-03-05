@@ -9,6 +9,9 @@ import java.time.{LocalDateTime, ZoneId}
 import java.util.Date
 import javax.imageio.ImageIO
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 import akka.actor.Actor
 
 class Logger () extends Actor {
@@ -20,7 +23,7 @@ class Logger () extends Actor {
     case (filePath: String, message: String)                  => logMessage(filePath, message)
     case (filePath: String, binary: Binary)                   => writeBinary(filePath, binary)
     case (filePath: String, image: Image)                     => writeImage(filePath, image)
-    case _              => throw new IllegalArgumentException("Unknown message received by Logger")
+    case _              => sender() ! Future.failed(new IllegalArgumentException("Unknown message received by Logger"))
   }
 
   private def logDuration (filePath: String, duration: Duration): Unit =
@@ -64,6 +67,7 @@ class Logger () extends Actor {
     val log = new PrintWriter(new FileWriter(file, true))
     log.println(message)
     log.close()
+    sender() ! Future.successful()
   }
 
   private def logNamespace(filePath: String, namespace: Namespace, message: String) =
@@ -82,6 +86,7 @@ class Logger () extends Actor {
     val writer = new FileOutputStream(output)
     writer.write(message.binary)
     writer.close()
+    sender() ! Future.successful()
   }
 
   private def writeImage(filePath: String, message: Image) =
@@ -89,6 +94,7 @@ class Logger () extends Actor {
     val imageFile = new File(filePath)
     if (message.overwrite || !imageFile.exists())
       ImageIO.write(message.image, "JPG", imageFile)
+    sender() ! Future.successful()
   }
 }
 
