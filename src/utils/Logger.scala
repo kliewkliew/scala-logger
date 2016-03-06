@@ -19,73 +19,89 @@ import akka.actor.Actor
 class Logger () extends Actor {
 
   def receive = {
-    case (filePath: String, property: Property)               => logTimestamp(filePath, property)
-    case (filePath: String, Timestamp(namespace, timestamp))  => logTimestamp(filePath, Property(namespace, timestamp, ""))
-    case (filePath: String, duration: Duration)               => logDuration(filePath, duration)
-    case (filePath: String, message: String)                  => logMessage(filePath, message)
-    case (filePath: String, binary: Binary)                   => writeBinary(filePath, binary)
-    case (filePath: String, image: Image)                     => writeImage(filePath, image)
-    case (filePath: String, uRL: URL, overwrite: Boolean)     => writeImageFromURL(filePath, uRL, overwrite)
-    case _              => sender() ! Future.failed(new IllegalArgumentException("Unknown message received by Logger"))
+    case PropertyList(filePath, propertyList) =>
+      logTimestamp(filePath, propertyList)
+    case TimestampList(filePath, timestampList) =>
+      logTimestamp(filePath, timestampList.map { timestamp => Property(timestamp.namespace, timestamp.timestamp, "")})
+    case DurationList(filePath, durationList) =>
+      logDuration(filePath, durationList)
+    case MessageList(filePath, messages) =>
+      logMessage(filePath, messages)
+    case SingleProperty(filePath, property) =>
+      logTimestamp(filePath, List(property))
+    case SingleTimestamp(filePath,  timestamp) =>
+      logTimestamp(filePath, List(Property(timestamp.namespace, timestamp.timestamp, "")))
+    case SingleDuration(filePath, duration) =>
+      logDuration(filePath, List(duration))
+    case (filePath: String, message: String) =>
+      logMessage(filePath, List(message))
+    case (filePath: String, binary: Binary) =>
+      writeBinary(filePath, binary)
+    case (filePath: String, image: Image) =>
+      writeImage(filePath, image)
+    case (filePath: String, uRL: URL, overwrite: Boolean) =>
+      writeImageFromURL(filePath, uRL, overwrite)
+    case _ =>
+      sender() ! Future.failed(new IllegalArgumentException("Unknown message received by Logger"))
   }
 
-  private def logDuration (filePath: String, duration: Duration): Unit =
+  private def logDuration (filePath: String, durationList: List[Duration]): Unit =
   {
-    val diff = java.time.Duration.between(
-      LocalDateTime.ofInstant(duration.start.toInstant(), ZoneId.systemDefault()),
-      LocalDateTime.ofInstant(duration.end.toInstant(), ZoneId.systemDefault()))
-
     logTimestamp(
       filePath,
-      Property(
-        duration.namespace,
-        duration.end,
-        durationFormat.format(
-          duration.key,
-          new Long(diff.toDays()),
-          new Long(diff.toHours() % 24),
-          new Long(diff.toMinutes() % 60),
-          new Long(diff.getSeconds() % 60)
-        )
-      )
+      durationList.map {
+        duration =>
+          val diff = java.time.Duration.between(
+            LocalDateTime.ofInstant(duration.start.toInstant(), ZoneId.systemDefault()),
+            LocalDateTime.ofInstant(duration.end.toInstant(), ZoneId.systemDefault()))
+
+          Property(
+            duration.namespace,
+            duration.end,
+            durationFormat.format(
+              duration.key,
+              new Long(diff.toDays()),
+              new Long(diff.toHours() % 24),
+              new Long(diff.toMinutes() % 60),
+              new Long(diff.getSeconds() % 60)
+            )
+          )
+      }
     )
   }
 
-  private def logTimestamp (filePath: String, property: Property): Unit =
+  private def logTimestamp (filePath: String, propertyList: List[Property]): Unit =
   {
-    logNamespace(
+    logMessage(
       filePath,
-      property.namespace,
-      (timestampFormat + "\t%s").format(
-        dateFormat.format(property.timestamp),
-        timeFormat.format(property.timestamp),
-        property.value))
+      propertyList.map {
+        property =>
+          "%s%s".format(
+            namespaceFormat.format(property.namespace.app, property.namespace.key),
+            (timestampFormat + "\t%s").format(
+              dateFormat.format(property.timestamp),
+              timeFormat.format(property.timestamp),
+              property.value))
+      }
+    )
   }
 
-  private def logMessage(filePath: String, message: String) =
+  private def logMessage(filePath: String, messages: List[String]) =
   {
     try {
       val file = new File(filePath)
       file.getParentFile().mkdirs()
 
       val log = new PrintWriter(new FileWriter(file, true))
-      log.println(message)
+      messages.foreach { message => log.println(message) }
       log.close()
+
       sender() ! Future.successful()
     }
     catch {
       case exception =>
         sender() ! Future.failed(exception)
     }
-  }
-
-  private def logNamespace(filePath: String, namespace: Namespace, message: String) =
-  {
-    logMessage(
-      filePath,
-      "%s%s".format(
-        namespaceFormat.format(namespace.app, namespace.key),
-        message))
   }
 
   private def writeBinary(filePath: String, message: Binary) =
@@ -135,6 +151,14 @@ object Logger {
   case class Duration(namespace: Namespace, key: String, start: Date, end: Date)
   case class Binary(binary: Array[Byte], overwrite: Boolean)
   case class Image(image: java.awt.image.RenderedImage, overwrite: Boolean)
+
+  case class PropertyList(filePath: String, propertyList: List[Property])
+  case class TimestampList(filePath: String, timestampList: List[Timestamp])
+  case class DurationList(filePath: String, durationList: List[Duration])
+  case class MessageList(filePath: String, messages: List[String])
+  case class SingleProperty(filePath: String, property: Property)
+  case class SingleTimestamp(filePath: String, timestamp: Timestamp)
+  case class SingleDuration(filePath: String, duration: Duration)
 
   private val namespaceFormat = "%-8s%-16s"
   private val timestampFormat = "%s\t%s"
