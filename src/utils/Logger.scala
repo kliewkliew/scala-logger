@@ -106,12 +106,18 @@ class Logger () extends Actor {
 
   private def writeBinary(filePath: String, message: Binary) =
   {
-    val output = new File(filePath)
-    output.getParentFile.mkdirs()
-    val writer = new FileOutputStream(output)
-    writer.write(message.binary)
-    writer.close()
-    sender() ! Future.successful()
+    try {
+      val output = new File(filePath)
+      output.getParentFile.mkdirs()
+      val writer = new FileOutputStream(output)
+      writer.write(message.binary)
+      writer.close()
+      sender() ! Future.successful()
+    }
+    catch {
+      case exception =>
+        sender() ! Future.failed(exception)
+    }
   }
 
   private def writeImage(filePath: String, message: Image) =
