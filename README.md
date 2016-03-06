@@ -1,6 +1,6 @@
-Scala Utils
+Scala Logger
 
-A collection of utilities intended for data-mining/logging apps
+This logging library is intended for quick prototyping of data-mining/logging apps where the schema has yet to be finalized.
 
 ## Logger usage
 To send messages to the logger
