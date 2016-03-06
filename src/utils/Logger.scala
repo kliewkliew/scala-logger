@@ -1,9 +1,12 @@
 package utils
 
+
 import Logger._
 
+import java.awt.image.RenderedImage
 import java.io.{File, FileOutputStream, FileWriter, PrintWriter}
 import java.lang.Long
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.time.{LocalDateTime, ZoneId}
 import java.util.Date
@@ -23,6 +26,7 @@ class Logger () extends Actor {
     case (filePath: String, message: String)                  => logMessage(filePath, message)
     case (filePath: String, binary: Binary)                   => writeBinary(filePath, binary)
     case (filePath: String, image: Image)                     => writeImage(filePath, image)
+    case (filePath: String, uRL: URL, overwrite: Boolean)     => writeImageFromURL(filePath, uRL, overwrite)
     case _              => sender() ! Future.failed(new IllegalArgumentException("Unknown message received by Logger"))
   }
 
@@ -96,6 +100,18 @@ class Logger () extends Actor {
       ImageIO.write(message.image, "JPG", imageFile)
     sender() ! Future.successful()
   }
+
+  private def writeImageFromURL(filePath: String, uRL: URL, overwrite: Boolean) =
+  {
+    val imageFuture = getImage(uRL)
+    imageFuture.onSuccess {
+      case image =>
+        writeImage(filePath, Image(image, overwrite))
+    }
+    sender() ! Future.successful()
+  }
+
+  private def getImage(uRL: URL): Future[RenderedImage] = Future { ImageIO.read(uRL) }
 }
 
 object Logger {
