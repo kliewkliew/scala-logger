@@ -1,6 +1,5 @@
 package utils
 
-
 import Logger._
 
 import java.awt.image.RenderedImage
@@ -65,13 +64,19 @@ class Logger () extends Actor {
 
   private def logMessage(filePath: String, message: String) =
   {
-    val file = new File(filePath)
-    file.getParentFile().mkdirs()
+    try {
+      val file = new File(filePath)
+      file.getParentFile().mkdirs()
 
-    val log = new PrintWriter(new FileWriter(file, true))
-    log.println(message)
-    log.close()
-    sender() ! Future.successful()
+      val log = new PrintWriter(new FileWriter(file, true))
+      log.println(message)
+      log.close()
+      sender() ! Future.successful()
+    }
+    catch {
+      case exception =>
+        sender() ! Future.failed(exception)
+    }
   }
 
   private def logNamespace(filePath: String, namespace: Namespace, message: String) =
@@ -95,10 +100,16 @@ class Logger () extends Actor {
 
   private def writeImage(filePath: String, message: Image) =
   {
-    val imageFile = new File(filePath)
-    if (message.overwrite || !imageFile.exists())
-      ImageIO.write(message.image, "JPG", imageFile)
-    sender() ! Future.successful()
+    try {
+      val imageFile = new File(filePath)
+      if (message.overwrite || !imageFile.exists())
+        ImageIO.write(message.image, "JPG", imageFile)
+      sender() ! Future.successful()
+    }
+    catch {
+      case exception =>
+        sender() ! Future.failed(exception)
+    }
   }
 
   private def writeImageFromURL(filePath: String, uRL: URL, overwrite: Boolean) =
@@ -108,7 +119,10 @@ class Logger () extends Actor {
       case image =>
         writeImage(filePath, Image(image, overwrite))
     }
-    sender() ! Future.successful()
+    imageFuture.onFailure {
+      case exception =>
+        sender() ! Future.failed(exception)
+    }
   }
 
   private def getImage(uRL: URL): Future[RenderedImage] = Future { ImageIO.read(uRL) }
