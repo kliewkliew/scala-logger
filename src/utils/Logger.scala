@@ -93,8 +93,13 @@ class Logger () extends Actor {
       file.getParentFile().mkdirs()
 
       val log = new PrintWriter(new FileWriter(file, true))
-      messages.foreach { message => log.println(message) }
-      log.close()
+
+      try {
+        messages.foreach { message => log.println(message) }
+      }
+      finally {
+        log.close()
+      }
 
       sender() ! Future.successful()
     }
@@ -110,8 +115,13 @@ class Logger () extends Actor {
       val output = new File(filePath)
       output.getParentFile.mkdirs()
       val writer = new FileOutputStream(output)
-      writer.write(message.binary)
-      writer.close()
+
+      try {
+        writer.write(message.binary)
+      }
+      finally {
+        writer.close()
+      }
       sender() ! Future.successful()
     }
     catch {
