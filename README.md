@@ -10,7 +10,8 @@ import utils.Concise.now
 import utils.Singleton.logger
 
 logger !
-        ( "C:\logPath.txt",
+        SingleTimestamp(
+          "C:\logPath.txt",
           Timestamp(
             Namespace("YouTube", "New Video"),
             now)
